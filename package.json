@@ -1,0 +1,17 @@
+{
+  "name": "whats-playing",
+  "version": "1.0.0",
+  "description": "slack integration for spotify",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jimmy Muga",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "dotenv": "^4.0.0",
+    "express": "^4.15.3",
+    "spotify-web-api-node": "^2.4.0"
+  }
+}
