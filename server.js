@@ -59,7 +59,7 @@ app.post('/', (req, res) => {
 function slackAttachmentResponse({name: trackTitle, external_urls, album, artists}) {
     const title = `${trackTitle} by ${artists[0].name}`
     return {
-        response_type: 'in_channel',
+        username: 'Crowdrise\'s Spotify Bot',
         attachments: [{
             fallback: title,
             title,
