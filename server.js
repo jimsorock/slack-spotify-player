@@ -36,7 +36,16 @@ app.use('/auth-callback', (req, res) => {
         })
 })
 
+app.get('/', () => {
+    res.send('nothing to see here, trying POST')
+})
+
 app.post('/', (req, res) => {
+    if(!spotifyApi.getAccessToken()) {
+        return res.json({
+            text:`No access token found :(`
+        })
+    }
     spotifyApi.getMyCurrentPlaybackState()
         .then(({body: {item: track}}) => {
             res.json(slackAttachmentResponse(track))
