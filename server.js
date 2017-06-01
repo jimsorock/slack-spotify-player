@@ -59,12 +59,13 @@ app.post('/', (req, res) => {
 function slackAttachmentResponse({name: trackTitle, external_urls, album, artists}) {
     const title = `${trackTitle} by ${artists[0].name}`
     return {
+        response_type: 'in_channel',
         attachments: [{
             fallback: title,
             title,
             title_link: external_urls.spotify,
             image_url: album.images[0].url,
-            color: "#84bd00"
+            color: '#84bd00'
         }]
     }
 }
