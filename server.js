@@ -6,7 +6,7 @@ const SpotifyWebApi = require('spotify-web-api-node')
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.CLIENT_ID || 'foo',
     clientSecret: process.env.CLIENT_SECRET || 'bar',
-    redirectUri: process.end.REDIRECT_URI || 'google.com'
+    redirectUri: process.env.REDIRECT_URI || 'google.com'
 });
 
 const scopes = ['user-read-playback-state'],
