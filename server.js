@@ -24,34 +24,41 @@ app.use('/auth-callback', (req, res) => {
             // Set the access token on the API object to use it in later calls
             spotifyApi.setAccessToken(data.body['access_token']);
             spotifyApi.setRefreshToken(data.body['refresh_token']);
-            res.send('success')
+            res.json({
+                status: 'success'
+            })
         })
         .catch(reason => {
+            res.json({
+                status: 'failed to authorize'
+            })
             console.log('Something went wrong!', reason)
         })
 })
 
-app.post('/whatsplaying', (req, res) => {
+app.post('/', (req, res) => {
     spotifyApi.getMyCurrentPlaybackState()
-        .then((data) => {
-            const item = data.body.item
-            const title = `${item.name} by ${item.artists[0].name}`
-            res.json({
-                attachments: [
-                    {
-                        fallback: title,
-                        title: title,
-                        title_link: item.external_urls.spotify,
-                        image_url: item.album.images[0].url,
-                        color: "#84bd00"
-                    }
-                ]
-            })
+        .then(({body: {item: track}}) => {
+            res.json(slackAttachmentResponse(track))
         })
         .catch(reason => {
             res.json(reason)
         })
+
 })
+
+function slackAttachmentResponse({name: trackTitle, external_urls, album, artists}) {
+    const title = `${trackTitle} by ${artists[0].name}`
+    return {
+        attachments: [{
+            fallback: title,
+            title,
+            title_link: external_urls.spotify,
+            image_url: album.images[0].url,
+            color: "#84bd00"
+        }]
+    }
+}
 
 app.listen(port, () => {
     console.log(`Magic happens on port: ${port}`)
