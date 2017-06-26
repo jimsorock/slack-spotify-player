@@ -41,7 +41,7 @@ app.use('/auth-callback', (req, res) => {
         })
 })
 
-app.get('/', () => {
+app.get('/', (req, res) => {
     res.send('nothing to see here, trying POST')
 })
 
