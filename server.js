@@ -24,8 +24,13 @@ app.use('/auth-callback', (req, res) => {
             // Set the access token on the API object to use it in later calls
             spotifyApi.setAccessToken(data.body['access_token']);
             spotifyApi.setRefreshToken(data.body['refresh_token']);
-            res.json({
-                status: 'success'
+            
+            spotifyApi.getMyCurrentPlaybackState()
+            .then(({body: {item: track}}) => {
+                res.json(slackAttachmentResponse(track))
+            })
+            .catch(reason => {
+                res.json(reason)
             })
         })
         .catch(reason => {
@@ -42,9 +47,8 @@ app.get('/', () => {
 
 app.post('/', (req, res) => {
     if(!spotifyApi.getAccessToken()) {
-        return res.json({
-            text:`No access token found :(`
-        })
+        const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state)
+        res.redirect(authorizeURL)
     }
     spotifyApi.getMyCurrentPlaybackState()
         .then(({body: {item: track}}) => {
