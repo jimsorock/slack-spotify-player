@@ -3,7 +3,6 @@ const app = express()
 require('dotenv').config()
 const port = process.env.PORT || 8080
 const SpotifyWebApi = require('spotify-web-api-node')
-const https = require('https')
 
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.CLIENT_ID || 'foo',
@@ -25,13 +24,8 @@ app.use('/auth-callback', (req, res) => {
             // Set the access token on the API object to use it in later calls
             spotifyApi.setAccessToken(data.body['access_token']);
             spotifyApi.setRefreshToken(data.body['refresh_token']);
-            
-            spotifyApi.getMyCurrentPlaybackState()
-            .then(({body: {item: track}}) => {
-                res.json(slackAttachmentResponse(track))
-            })
-            .catch(reason => {
-                res.json(reason)
+            res.json({
+                status: 'success'
             })
         })
         .catch(reason => {
@@ -47,10 +41,10 @@ app.get('/', (req, res) => {
 })
 
 app.post('/', (req, res) => {
-    console.log('access token:', spotifyApi.getAccessToken())
     if(!spotifyApi.getAccessToken()) {
-        const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state)
-        https.get(authorizeURL)
+        return res.json({
+            text:`No access token found :(`
+        })
     }
     spotifyApi.getMyCurrentPlaybackState()
         .then(({body: {item: track}}) => {
