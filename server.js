@@ -49,7 +49,7 @@ app.post('/', (req, res) => {
     console.log('access token:', spotifyApi.getAccessToken())
     if(!spotifyApi.getAccessToken()) {
         const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state)
-        res.redirect(authorizeURL)
+        res.redirect(307, authorizeURL)
     }
     spotifyApi.getMyCurrentPlaybackState()
         .then(({body: {item: track}}) => {
