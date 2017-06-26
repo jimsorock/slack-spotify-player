@@ -3,7 +3,7 @@ const app = express()
 require('dotenv').config()
 const port = process.env.PORT || 8080
 const SpotifyWebApi = require('spotify-web-api-node')
-const http = require('http')
+const https = require('https')
 
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.CLIENT_ID || 'foo',
@@ -50,7 +50,7 @@ app.post('/', (req, res) => {
     console.log('access token:', spotifyApi.getAccessToken())
     if(!spotifyApi.getAccessToken()) {
         const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state)
-        http.get(authorizeURL)
+        https.get(authorizeURL)
     }
     spotifyApi.getMyCurrentPlaybackState()
         .then(({body: {item: track}}) => {
