@@ -42,10 +42,11 @@ app.use('/auth-callback', (req, res) => {
 })
 
 app.get('/', (req, res) => {
-    res.send('nothing to see here, trying POST')
+    res.send('nothing to see here, try POST')
 })
 
 app.post('/', (req, res) => {
+    console.log('access token:', spotifyApi.getAccessToken())
     if(!spotifyApi.getAccessToken()) {
         const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state)
         res.redirect(authorizeURL)
