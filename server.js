@@ -53,7 +53,7 @@ app.post('/', (req, res) => {
         tokenService.refreshToken().then(() => {
             spotifyApi.getMyCurrentPlaybackState()
                 .then(({body: {item: track, timestamp}}) => res.json(
-                    slackAttachmentResponse(createSlackAttachment(track, timestamp)))
+                    slackAttachmentResponse([createSlackAttachment(track, timestamp)]))
                 )
                 .catch(reason => res.json(reason.message))
         })
@@ -61,7 +61,7 @@ app.post('/', (req, res) => {
     } else {
         spotifyApi.getMyCurrentPlaybackState()
             .then(({body: {item: track, timestamp}}) => res.json(
-                    slackAttachmentResponse(createSlackAttachment(track, timestamp)))
+                    slackAttachmentResponse([createSlackAttachment(track, timestamp)]))
             )
             .catch(reason => res.json(reason.messsage))
     }  
