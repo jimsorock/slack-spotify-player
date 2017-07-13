@@ -4,16 +4,18 @@ require('dotenv').config()
 const port = process.env.PORT || 8080
 const SpotifyWebApi = require('spotify-web-api-node')
 const mongoose = require('mongoose')
-
+const bodyParser = require('body-parser')
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.CLIENT_ID || 'foo',
     clientSecret: process.env.CLIENT_SECRET || 'bar',
     redirectUri: process.env.REDIRECT_URI || 'google.com'
 });
 const tokenService = require('./app/services/tokenService')(spotifyApi)
-
 mongoose.Promise = global.Promise;
 const connection = mongoose.connect(process.env.DB_URL,  { useMongoClient: true })
+app.use(bodyParser.json())
+app.use(bodyParser.json({type: 'application/vnd.api+json'}))
+app.use(bodyParser.urlencoded({extended: true}))
 
 const scopes = ['user-read-playback-state', 'user-read-recently-played'],
     state = 'slack-spotify'
@@ -49,6 +51,21 @@ app.use('/auth-callback', (req, res) => {
 app.get('/', (req, res) => res.send('Nothing to see here, try POST'))
 
 app.post('/', (req, res) => {
+    if(!req.body.text) {
+        return getCurrentlyPlaying(res)
+    }
+    switch (req.body.text) {
+        case 'recent':
+            getRecentlyPlayed(res)
+            break;
+    
+        default:
+            getCurrentlyPlaying(res)
+            break;
+    }
+})
+
+function getCurrentlyPlaying(res) {
     if(!spotifyApi.getAccessToken()) {
         tokenService.refreshToken().then(() => {
             spotifyApi.getMyCurrentPlaybackState()
@@ -64,10 +81,10 @@ app.post('/', (req, res) => {
                     slackAttachmentResponse([createSlackAttachment(track, timestamp)]))
             )
             .catch(reason => res.json(reason.messsage))
-    }  
-})
+    }
+}
 
-app.post('/recent', (req, res) => {
+function getRecentlyPlayed(res) {
     if(!spotifyApi.getAccessToken()) {
         tokenService.refreshToken().then(() => {
             spotifyApi.getMyRecentlyPlayedTracks({limit:5})
@@ -89,7 +106,7 @@ app.post('/recent', (req, res) => {
             })
             .catch(reason => res.json(reason.message))
     }
-})
+}
 
 function createSlackAttachment({name: trackTitle, external_urls, album, artists}, timestamp) {
     const title = `${trackTitle} by ${artists[0].name}`
