@@ -14,6 +14,7 @@ const tokenService = require('./app/services/tokenService')(spotifyApi)
 mongoose.Promise = global.Promise;
 const connection = mongoose.connect(process.env.DB_URL,  { useMongoClient: true })
 app.use(bodyParser.json())
+
 app.use(bodyParser.json({type: 'application/vnd.api+json'}))
 app.use(bodyParser.urlencoded({extended: true}))
 
