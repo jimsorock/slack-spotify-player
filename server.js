@@ -3,14 +3,19 @@ const app = express()
 require('dotenv').config()
 const port = process.env.PORT || 8080
 const SpotifyWebApi = require('spotify-web-api-node')
+const mongoose = require('mongoose')
 
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.CLIENT_ID || 'foo',
     clientSecret: process.env.CLIENT_SECRET || 'bar',
     redirectUri: process.env.REDIRECT_URI || 'google.com'
 });
+const tokenService = require('./app/services/tokenService')(spotifyApi)
 
-const scopes = ['user-read-playback-state'],
+mongoose.Promise = global.Promise;
+const connection = mongoose.connect(process.env.DB_URL,  { useMongoClient: true })
+
+const scopes = ['user-read-playback-state', 'user-read-recently-played'],
     state = 'slack-spotify'
 
 app.get('/auth', (req, res) => {
@@ -20,13 +25,16 @@ app.get('/auth', (req, res) => {
 
 app.use('/auth-callback', (req, res) => {
     spotifyApi.authorizationCodeGrant(req.query.code)
-        .then(function (data) {
-            // Set the access token on the API object to use it in later calls
-            spotifyApi.setAccessToken(data.body['access_token']);
-            spotifyApi.setRefreshToken(data.body['refresh_token']);
-            res.json({
-                status: 'success'
-            })
+        .then(({body}) => {
+            spotifyApi.setAccessToken(body['access_token']);
+            spotifyApi.setRefreshToken(body['refresh_token']);
+
+            tokenService.saveRefreshToken(body['refresh_token'])
+                .then(({refresh_token}) => res.json({
+                        status: 'success',
+                        token: refresh_token
+                    })
+                )
         })
         .catch(reason => {
             res.json({
@@ -36,37 +44,70 @@ app.use('/auth-callback', (req, res) => {
         })
 })
 
-app.get('/', (req, res) => {
-    res.send('nothing to see here, try POST')
-})
+
+
+app.get('/', (req, res) => res.send('Nothing to see here, try POST'))
 
 app.post('/', (req, res) => {
     if(!spotifyApi.getAccessToken()) {
-        return res.json({
-            text:`No access token found :(`
+        tokenService.refreshToken().then(() => {
+            spotifyApi.getMyCurrentPlaybackState()
+                .then(({body: {item: track, timestamp}}) => res.json(
+                    slackAttachmentResponse(createSlackAttachment(track, timestamp)))
+                )
+                .catch(reason => res.json(reason.message))
         })
-    }
-    spotifyApi.getMyCurrentPlaybackState()
-        .then(({body: {item: track}}) => {
-            res.json(slackAttachmentResponse(track))
-        })
-        .catch(reason => {
-            res.json(reason)
-        })
-
+        .catch(reason => res.json(reason))
+    } else {
+        spotifyApi.getMyCurrentPlaybackState()
+            .then(({body: {item: track, timestamp}}) => res.json(
+                    slackAttachmentResponse(createSlackAttachment(track, timestamp)))
+            )
+            .catch(reason => res.json(reason.messsage))
+    }  
 })
 
-function slackAttachmentResponse({name: trackTitle, external_urls, album, artists}) {
+app.post('/recent', (req, res) => {
+    if(!spotifyApi.getAccessToken()) {
+        tokenService.refreshToken().then(() => {
+            spotifyApi.getMyRecentlyPlayedTracks({limit:5})
+            .then(({ body: { items } }) => {
+                const attachments = items.map(
+                    ({track, played_at}) => createSlackAttachment(track, played_at)
+                )
+                res.json(slackAttachmentResponse(attachments))
+            })
+            .catch(reason => res.json(reason.message))
+        }) 
+    } else {
+        spotifyApi.getMyRecentlyPlayedTracks({limit:10})
+            .then(({ body: { items } }) => {
+                const attachments = items.map(
+                    ({track, played_at}) => createSlackAttachment(track, played_at)
+                )
+                res.json(slackAttachmentResponse(attachments))
+            })
+            .catch(reason => res.json(reason.message))
+    }
+})
+
+function createSlackAttachment({name: trackTitle, external_urls, album, artists}, timestamp) {
     const title = `${trackTitle} by ${artists[0].name}`
     return {
-        username: 'Spotify App',
-        attachments: [{
             fallback: title,
             title,
             title_link: external_urls.spotify,
             image_url: album.images[0].url,
-            color: '#84bd00'
-        }]
+            color: '#84bd00',
+            footer: 'Played',
+            ts: Math.round(new Date(timestamp).getTime()/1000)
+        }
+}
+
+function slackAttachmentResponse(attachments) {
+    return {
+        username: 'Spotify App',
+        attachments
     }
 }
 

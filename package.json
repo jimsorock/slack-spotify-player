@@ -1,6 +1,6 @@
 {
   "name": "whats-playing",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "slack integration for spotify",
   "main": "server.js",
   "scripts": {
@@ -8,10 +8,12 @@
   },
   "author": "Jimmy Muga",
   "license": "MIT",
+  "engines" : { "node" : ">=6.11.1" },
   "dependencies": {
     "body-parser": "^1.17.2",
     "dotenv": "^4.0.0",
     "express": "^4.15.3",
+    "mongoose": "^4.11.1",
     "spotify-web-api-node": "^2.4.0"
   }
 }
